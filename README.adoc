@@ -171,6 +171,38 @@ $ java -jar output.jar
 
 WARNING: This has been removed due to my own licensing concerns about co-locating the source with my own.
 
+
+==== AOT compiled Uberjars
+
+If you need to AOT compile your uberjar, you will need to run an AOT step to compile the application and generate the needed class files, then pass the directory containing those generated class files to pack using the `-e` flag. 
+
+An example flow might be:
+
+Alias in deps.edn
+[source,clojure]
+----
+:aot {:jvm-opts ["-Dmain=foo.main"
+                 "-Dclojure.compiler.elide-meta=[:doc,:file,:line,:added]"
+                 "-Dclojure.compiler.direct-linking=true"]}
+----
+
+Then your build process will be like so:
+
+[source,bash]
+----
+# AOT compile the application
+clojure -A:aot \
+        -e \
+'(binding [*compile-path* "build-data"]
+  (compile (symbol "foo.main")))'
+
+# Create an uberjar including the build data
+
+clojure -Sdeps '{:deps {pack/pack.alpha {:git/url "https://github.com/juxt/pack.alpha.git" :sha "73552d02e43fa7fac4e3f245257742a9534ea0f2"}}}' -m mach.pack.alpha.one-jar -m foo.main -e "build-data" foo.jar
+
+----
+Note: the resulting class files will be placed in a `project.jar` within the lib directory of the generated jar
+
 === Skinny JAR
 
 Output a classpath, or subset of it, into directories or jars.
